@@ -22,6 +22,7 @@ stateDiagram-v2
 DatadogAgent --> DatadogPlatform
 OTELCollector --> DatadogPlatform
 ```
+You'll notice that the Datadog-agent in this diagram is only forwarding logs and not traces/metrics when in theory it could do both. The answer as to why we don't use the datadog agent for both is in order to seperate the application implementation from the specific observabilty layer in use. Also in order to monitor the host itself and the containers running on that host using only Data-agents would require multiple instances of those Datadog-agents. This would incur additional costs. Technically there are ways around this but we opted for the above configuration as it is, in our view, the most maintainable.
 
 ## Case Study - Partner Enablement
 Our colleagues over at Partner Enablement have been busy creating the new HSI REST API. They are ready to start deploying to our Netuse infrastructure, and as is the case with all our deployed applications, need to integrate monitoring into their deployment. 
@@ -46,12 +47,12 @@ enabled
 ) Active: inactive (dead)
 ```
 
-So here we can see that the agent is disabled and off. The Infra team will need to change some configuration to enable the agent.
+So here we can see that the agent is disabled. The Infra team will need to change some configuration to enable the agent.
 
 **Note: ** All hosts in the dc_integration hostgroup have their datadog agents disabled off by default, this is a cost saving approach since our integration hostgroups is a wildcald hostgroup containing the greatest number of hosts. You will need to explicitly request that they be turned on if that is required.
 
 ### Sending Logs
-As mentioned previously, we have standardized the log collection from docker containers so that everything that is sent to a containers stdout/stderr will be automatically forwarded to the Datadog platform via the Datadog-agent. However, in order to get more out of these logs in terms of searchability and correlatability we should send those logs in json format with some specific fields included. How and where to define this json log format will differ depending on the technology you are running your application on. In the case of Partner Enablement and the HSI Rest client they are using Java Springboot. Will need to make the required changes for Java Springboot to send logs to stdout/stderr in json format.
+As mentioned previously, we have standardized the log collection from docker containers so that everything that is sent to a container's stdout/stderr will be automatically forwarded to the Datadog platform via the Datadog-agent. However, in order to get more out of these logs in terms of searchability and correlatability we should send those logs in json format with some specific fields included. How and where to define this json log format will differ depending on the technology you are running your application on. In the case of Partner Enablement and the HSI Rest client they are using Java Springboot. Will need to make the required changes for Java Springboot to send logs to stdout/stderr in json format.
 
 #### Java Springboot Json Logs
 Currently we have the following logback-spring.xml file defined:
@@ -117,7 +118,7 @@ We want to have something like this instead:
 ```
 **Note: ** Setting the log level field in the json definition will override the default level category coming from stdout/stderr.
 
-**Note**: we should set the json logging in the deployment repo for clarity and flexibility (we won't need to redeploy to change logging settings). We can achieve this by mounting the logging file in the container and adding the environment variable specifying the path to the log configuration file:
+**Note**: we should set the json logging in the deployment repo (the HSI REST assets are built in one repository and deployed via a seperate repository) for clarity and flexibility (we won't need to redeploy to change logging settings). We can achieve this by mounting the logging file in the container and adding the environment variable specifying the path to the log configuration file:
 
 ```bash
 JAVA_OPTS=-Dlogging.config='file:///your/file/location/logback.xml'
