@@ -2,11 +2,11 @@
 #newsletter #datadog 
 Preamble: This article is entirely hand written. No AI agents or LLMs were used in it's creation, the spelling and grammatical error will attest to this :)
 
-In todays article we're going to look at what it takes to get your application communicating with Datadog. For those of you who have not heard about Datadog before; Datadog is the platform we are using to monitor the HTS product. I would highly recommend the intro series from Marcus Held on Datadog [Datadog Intro Series](https://hogrefe.sharepoint.com/sites/E-Assessment/Freigegebene%20Dokumente/Forms/redminetickets.aspx?FolderCTID=0x012000F74E5613EA563E419A6459ACD997ED3F&id=%2Fsites%2FE%2DAssessment%2FFreigegebene%20Dokumente%2FGeneral%2FRecordings%2FHTS%20LTS%2FDatadog%20Intro%20Series) For more information on how to use Datadog I cannot recommend highly enough their learning platform: https://learn.datadoghq.com/bundles/core-skills-learning-path.
+In today's article we're going to look at what it takes to get your application communicating with Datadog. For those of you who have not heard about Datadog before; Datadog is the platform we are using to monitor the HTS product. I would highly recommend the intro series from Marcus Held on Datadog [Datadog Intro Series](https://hogrefe.sharepoint.com/sites/E-Assessment/Freigegebene%20Dokumente/Forms/redminetickets.aspx?FolderCTID=0x012000F74E5613EA563E419A6459ACD997ED3F&id=%2Fsites%2FE%2DAssessment%2FFreigegebene%20Dokumente%2FGeneral%2FRecordings%2FHTS%20LTS%2FDatadog%20Intro%20Series) For more information on how to use Datadog I cannot recommend highly enough their learning platform: https://learn.datadoghq.com/bundles/core-skills-learning-path.
 
 ## Typical setup
-All of our Netuse hosts come pre-installed with a datadog-agent. This datadog agent sends logs from our host to the datadog platform. The applications themselves, at least all the newer developed applications, run as part of a containerized aka "docker" runtime. All logs that are sent to the containers stdout, so everything you see when you run the command "docker logs <container-name>" are collected by the Datadog agent and sent to the Datadog platform.
-Metrics and traces are sent from the application container to a "side-car" opentelemetry or "OTEL" container which subsequently sends them to the Datadog platform.
+All of our Netuse hosts come pre-installed with a datadog-agent. This datadog agent sends logs from our host to the datadog platform. The applications themselves, at least all the newer developed applications, run as part of a containerized aka "docker" runtime. All logs that are sent to the containers stdout/stderr, so everything you see when you run the command "docker logs <container-name>" are collected by the Datadog agent and sent to the Datadog platform.
+Metrics and traces are sent from the application container to a "side-car" opentelemetry or "OTEL" container which subsequently sends them to the Datadog platform. The reasoning behind using the OTEL collector is keeping things standard on not locked into any particular vendor. This will allow us in the future to more easily migrate to a different logging platform. There would also be security considerations when allowing the container to communicate directly with the hosts network interface.
 
 Below is a diagram that depicts this setup.
 
@@ -48,10 +48,10 @@ enabled
 
 So here we can see that the agent is disabled and off. The Infra team will need to change some configuration to enable the agent.
 
-**Note: ** All hosts in the dc_integration hostgroup have their datadog agents disabled off by default. You will need to explicitly request that they be turned on if that is required.
+**Note: ** All hosts in the dc_integration hostgroup have their datadog agents disabled off by default, this is a cost saving approach since our integration hostgroups is a wildcald hostgroup containing the greatest number of hosts. You will need to explicitly request that they be turned on if that is required.
 
 ### Sending Logs
-As mentioned previously, we have standardized the log collection from docker containers so that everything that is sent to a containers stdout will be automatically forwarded to the Datadog platform via the Datadog-agent. However, in order to get more out of these logs in terms of searchability and correlatability we should send those logs in json format with some specific fields included. How and where to define this json log format will differ depending on the technology you are running your application on. In the case of Partner Enablement and the HSI Rest client they are using Java Springboot. Will need to make the required changes for Java Springboot to send logs to stdout in json format.
+As mentioned previously, we have standardized the log collection from docker containers so that everything that is sent to a containers stdout/stderr will be automatically forwarded to the Datadog platform via the Datadog-agent. However, in order to get more out of these logs in terms of searchability and correlatability we should send those logs in json format with some specific fields included. How and where to define this json log format will differ depending on the technology you are running your application on. In the case of Partner Enablement and the HSI Rest client they are using Java Springboot. Will need to make the required changes for Java Springboot to send logs to stdout/stderr in json format.
 
 #### Java Springboot Json Logs
 Currently we have the following logback-spring.xml file defined:
@@ -115,7 +115,7 @@ We want to have something like this instead:
     </root>
 </configuration>
 ```
-It's likely that we will need to install the relevant logging classes for this. 
+**Note: ** Setting the log level field in the json definition will override the default level category coming from stdout/stderr.
 
 **Note**: we should set the json logging in the deployment repo for clarity and flexibility (we won't need to redeploy to change logging settings). We can achieve this by mounting the logging file in the container and adding the environment variable specifying the path to the log configuration file:
 
@@ -127,7 +127,8 @@ JAVA_OPTS=-Dlogging.config='file:///your/file/location/logback.xml'
 In accordance with our setup diagram we want to send the metrics and traces of the application via an OTEL sidecar container to the Datadog Platform. We have specifically created an OTEL docker image for this purpose and it has the advantage that it is considered as part of the Datadog-agent on the host and we therefore do not have to pay extra for it.
 
 #### OTEL Collector Setup
-Partner enablement are using docker swarm for their deployment but the following will work, with minor adjustments, with either simple docker run commands or a docker compose file.
+Partner enablement are using docker swarm for their deployment. We need to update the swarm configuration file, remove the datadog-agent container definition that was previously defined and replace it with our customized OTEL image.
+The following changes will work, with minor adjustments, with either simple docker run commands or a docker compose file.
 
 The docker swarm file defining the deployment currently looks like this:
 
