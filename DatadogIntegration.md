@@ -49,10 +49,10 @@ enabled
 
 So here we can see that the agent is disabled. The Infra team will need to change some configuration to enable the agent.
 
-**Note: ** All hosts in the dc_integration hostgroup have their datadog agents disabled by default, this is a cost saving approach since our integration hostgroups is a wildcald hostgroup containing the greatest number of hosts. You will need to explicitly request that they be turned on if that is required.
+**Note: ** All hosts in the dc_integration hostgroup have their datadog agents disabled by default, this is a cost saving approach since our integration hostgroup is a wildcald hostgroup containing the greatest number of hosts. You will need to explicitly request that they be turned on if that is required.
 
 ### Sending Logs
-As mentioned previously, we have standardized the log collection from docker containers so that everything that is sent to a container's stdout/stderr will be automatically forwarded to the Datadog platform via the Datadog-agent. However, in order to get more out of these logs in terms of searchability and correlatability we should send those logs in json format with some specific fields included. How and where to define this json log format will differ depending on the technology you are running your application on. In the case of Partner Enablement and the HSI Rest client they are using Java Springboot. Will need to make the required changes for Java Springboot to send logs to stdout/stderr in json format.
+As mentioned previously, we have standardized the log collection from docker containers so that everything that is sent to a container's stdout/stderr will be automatically forwarded to the Datadog platform via the Datadog-agent. However, in order to get more out of these logs in terms of searchability and correlatability we should send those logs in json format with some specific fields included. How and where to define this json log format will differ depending on the technology you are running your application on. In the case of Partner Enablement and the HSI Rest client they are using Java Springboot. We will need to make the required changes for Java Springboot to send logs to stdout/stderr in json format.
 
 #### Java Springboot Json Logs
 Currently we have the following logback-spring.xml file defined:
