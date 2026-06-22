@@ -1,5 +1,3 @@
-##In Review
-#newsletter #datadog 
 Preamble: This article is entirely hand written. No AI agents or LLMs were used in it's creation, the spelling and grammatical error will attest to this :)
 
 In today's article we're going to look at what it takes to get your application communicating with Datadog. For those of you who have not heard about Datadog before; Datadog is the platform we are using to monitor the HTS product. I would highly recommend the intro series from Marcus Held on Datadog [Datadog Intro Series](https://hogrefe.sharepoint.com/sites/E-Assessment/Freigegebene%20Dokumente/Forms/redminetickets.aspx?FolderCTID=0x012000F74E5613EA563E419A6459ACD997ED3F&id=%2Fsites%2FE%2DAssessment%2FFreigegebene%20Dokumente%2FGeneral%2FRecordings%2FHTS%20LTS%2FDatadog%20Intro%20Series) For more information on how to use Datadog I cannot recommend highly enough their learning platform: https://learn.datadoghq.com/bundles/core-skills-learning-path.
